@@ -1,241 +1,333 @@
-# Onfly — Consolidador de reservas de hotel
+# 🏨 Onfly — Consolidador de Reservas de Hotel
 
-Você recebeu a exportação de reservas de hotel de uma empresa cliente da Onfly. O CLI deste projeto deveria gerar um relatório JSON consolidado, mas **entrega números errados**.
+CLI desenvolvido em Python para ler reservas de hotel, aplicar as regras de faturamento e gerar um relatório JSON consolidado em reais.
 
-**Sua tarefa:** encontrar e corrigir os defeitos do CLI, fazer os testes fornecidos passarem e
-entregar o projeto.
+O projeto foi recebido como um desafio técnico com defeitos intencionais em regras de câmbio, cálculo de noites, status faturáveis e ordenação. Depois da investigação e das correções, o relatório passou a seguir o contrato proposto e a suíte final ficou com **11 testes aprovados**.
 
-## Como rodar
+---
 
-Requisitos: Python 3.11+ e pytest para os testes (`requirements-dev.txt`).
+## 📂 Estrutura do projeto
+
+```text
+📦 onfly-desafio
+├── 📁 data
+│   ├── 📄 exemplo-validacao.csv
+│   ├── 📄 reservas_hoteis.csv
+│   └── 📄 taxas_cambio.csv
+├── 📁 entrega
+│   ├── 📘 README-ENTREGA.md
+│   └── 📁 uso-de-ia
+│       ├── 📄 declaracao.md
+│       ├── 📄 sessao-01.jsonl
+│       ├── 📄 sessao-01.md
+│       ├── 📄 sessao-02.jsonl
+│       └── 📄 sessao-02.md
+├── 📁 output
+│   └── 📄 .gitkeep
+├── 📁 src
+│   └── 📁 onfly_report
+│       ├── 📁 repositories
+│       ├── 📁 services
+│       ├── 📄 cli.py
+│       ├── 📄 models.py
+│       └── 📄 __main__.py
+├── 📁 tests
+│   ├── 📄 helpers.py
+│   ├── 📄 test_currency.py
+│   ├── 📄 test_nights.py
+│   ├── 📄 test_regression_report.py
+│   ├── 📄 test_status_rules.py
+│   └── 📄 test_top_hotels.py
+├── ⚙️ pyproject.toml
+├── 📄 requirements.txt
+├── 📄 requirements-dev.txt
+└── 📘 README.md
+```
+
+## 🛠 O que usei?
+
+- **Python 3.11** para o CLI e as regras de negócio.
+- **Biblioteca padrão do Python** para CSV, JSON, datas, argumentos e logs.
+- **pytest 8.3.4** para os testes automatizados.
+- **Ruff 0.8.4** para análise estática e padronização.
+
+O projeto não precisa de dependências externas em runtime. As dependências de desenvolvimento ficam em `requirements-dev.txt`.
+
+## 📋 Antes de começar
+
+Tenha instalado em sua máquina:
+
+- **[Python 3.11 ou superior](https://www.python.org/downloads/)**
+- **Git**, caso queira clonar o repositório
+
+## 🏃‍♂️ Bora rodar!
+
+### 1. Clone o repositório
+
+```bash
+git clone https://github.com/PedroMaiaAlves/onfly-desafio.git
+cd onfly-desafio
+```
+
+### 2. Crie e ative o ambiente virtual
+
+Linux ou macOS:
 
 ```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements-dev.txt
-
-PYTHONPATH=src python -m onfly\_report \\
-  --input data/reservas\_hoteis.csv \\
-  --rates data/taxas\_cambio.csv \\
-  --output output/report.json
 ```
 
-O relatório é gravado em `output/report.json`; o CLI cria o diretório. Um resumo é impresso no
-stdout.
+Windows PowerShell:
 
-Os testes já estão em `tests/`. No início, todos falham — é esperado. Rode:
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+### 3. Instale as dependências de desenvolvimento
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+### 4. Gere o relatório completo
+
+Linux ou macOS:
+
+```bash
+PYTHONPATH=src python -m onfly_report \
+  --input data/reservas_hoteis.csv \
+  --rates data/taxas_cambio.csv \
+  --output output/report.json \
+  --top 5
+```
+
+Windows PowerShell:
+
+```powershell
+$env:PYTHONPATH = "src"
+.\.venv\Scripts\python.exe -m onfly_report `
+  --input data\reservas_hoteis.csv `
+  --rates data\taxas_cambio.csv `
+  --output output\report.json `
+  --top 5
+```
+
+O diretório de saída é criado automaticamente. Ao final, o relatório estará em:
+
+```text
+output/report.json
+```
+
+Resumo esperado para o arquivo completo:
+
+```text
+Reservas: 200 | Confirmadas: 153 | Noites: 909 | Total BRL: 249543.79
+```
+
+## ⚙️ Argumentos do CLI
+
+| Argumento | Obrigatório | Padrão | Descrição |
+|---|---:|---|---|
+| `--input` | Sim | — | Caminho do CSV de reservas. |
+| `--rates` | Sim | — | Caminho do CSV de taxas de câmbio. |
+| `--output` | Não | `output/report.json` | Arquivo JSON que será gerado. |
+| `--top` | Não | `5` | Quantidade de hotéis no ranking; deve ser maior ou igual a 1. |
+
+Códigos de saída:
+
+- `0`: execução concluída com sucesso;
+- `2`: argumento ou entrada inválida;
+- `1`: erro inesperado.
+
+## 🔄 Como o consolidador funciona?
+
+O processamento segue este fluxo:
+
+```text
+Ler os CSVs
+    ↓
+Converter os campos para os tipos corretos
+    ↓
+Contar as reservas por status
+    ↓
+Filtrar somente as reservas CONFIRMED
+    ↓
+Calcular noites e converter os valores para BRL
+    ↓
+Agrupar por mês e por hotel
+    ↓
+Gerar o relatório JSON
+```
+
+O relatório contém:
+
+- resumo geral das reservas;
+- contagens por status;
+- total de noites de quarto;
+- total e diária média em BRL;
+- consolidação pelo mês do check-in;
+- ranking dos hotéis de maior valor.
+
+## 📌 Principais regras de negócio
+
+### Status
+
+- Apenas `CONFIRMED` é faturável.
+- `CANCELLED` e `NO_SHOW` entram nas contagens, mas não participam das noites, valores, meses ou ranking.
+- Qualquer outro status também fica fora das agregações faturáveis.
+
+### Noites
+
+```text
+room_nights = (checkout_date - checkin_date).days * rooms
+```
+
+A diferença é não inclusiva. Por exemplo, check-in em 10/01 e check-out em 13/01 resultam em três noites por quarto.
+
+### Câmbio
+
+```text
+amount_brl = amount * rate_to_brl
+```
+
+Os valores usam `Decimal` durante todo o cálculo. O arredondamento para duas casas, com `ROUND_HALF_UP`, acontece somente na serialização.
+
+### Ordenação
+
+- `by_month`: mês em ordem crescente;
+- `top_hotels`: total em BRL decrescente;
+- em caso de empate: `hotel_id` crescente.
+
+## 📄 Formato do relatório
+
+Exemplo simplificado:
+
+```json
+{
+  "report_version": "1.0",
+  "generated_at": "2026-11-15T10:00:00-03:00",
+  "summary": {
+    "total_reservations": 200,
+    "confirmed_reservations": 153,
+    "cancelled_reservations": 22,
+    "no_show_reservations": 25,
+    "total_room_nights": 909,
+    "total_amount_brl": "249543.79",
+    "average_nightly_rate_brl": "274.53"
+  },
+  "by_month": [],
+  "top_hotels": []
+}
+```
+
+Os campos monetários são strings com exatamente duas casas decimais e sem separador de milhar.
+
+## 🧪 Testes e validação
+
+Execute a suíte completa com:
 
 ```bash
 pytest -q
 ```
 
-Corrija o código até todos passarem. **Não altere os testes fornecidos.** Se quiser, adicione
-testes novos em arquivos `test\_\*.py`.
+No Windows, também é possível usar diretamente o ambiente virtual:
 
-## Estrutura
-
-```
-.
-├── README.md              # este arquivo
-├── pyproject.toml
-├── requirements\*.txt
-├── data/
-│   ├── reservas\_hoteis.csv
-│   ├── taxas\_cambio.csv
-│   └── exemplo-validacao.csv
-├── src/onfly\_report/      # CLI
-├── tests/                 # testes fornecidos
-├── entrega/               # sua entrega
-└── output/                # relatório gerado
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
 ```
 
-## Regras de negócio
+Resultado final:
 
-Os dados fornecidos estão consistentes, os defeitos estão no CLI.
-
-As colunas do CSV são autoexplicativas. O relatório usa hotel, check-in, check-out, quartos, status, moeda e valor; as demais colunas não afetam os totais.
-
-### Status
-
-* Só `CONFIRMED` é faturável.
-* `CANCELLED` e `NO\_SHOW` contam em `total\_reservations` e nas contagens por status, mas não entram
-em noites, valores, `by\_month` nem `top\_hotels`.
-
-### Noites
-
-```
-room\_nights = (checkout\_date - checkin\_date).days \* rooms
+```text
+11 passed
 ```
 
-A diferença é não inclusiva: check-in 10/01 e check-out 13/01 = 3 noites. Vale também na virada de
-mês/ano.
+Os testes cobrem:
 
-### Câmbio
+- conversão de BRL e USD;
+- precisão decimal e arredondamento;
+- valor monetário zero;
+- virada de mês e datas iguais;
+- check-out anterior ao check-in;
+- regras de `CONFIRMED`, `CANCELLED`, `NO_SHOW` e `PENDING`;
+- relatório de regressão completo;
+- ranking decrescente e desempate por `hotel_id`.
 
-* `amount` está na moeda de `currency`.
-* Converta com `amount \* rate\_to\_brl`, usando a tabela `data/taxas\_cambio.csv`.
-* Todas as moedas do dataset têm taxa.
-
-### Totais
-
-* `total\_reservations` = número de reservas no arquivo.
-* `confirmed\_reservations`, `cancelled\_reservations` e `no\_show\_reservations` = contagens por status.
-* `total\_room\_nights`, `total\_amount\_brl` e `average\_nightly\_rate\_brl` usam apenas `CONFIRMED`.
-
-### Ordem do processamento
-
-```
-ler → converter tipos → contar status → filtrar CONFIRMED → agregar
-```
-
-### Exatidão
-
-* Use `Decimal`, nunca `float`, no dinheiro.
-* Some os valores exatos e arredonde **só na serialização**, para 2 casas, com half-up.
-* `average\_nightly\_rate\_brl = total\_amount\_brl / total\_room\_nights`; sem noites, `"0.00"`.
-* Check-in/check-out são datas civis (`YYYY-MM-DD`).
-* `generated\_at` usa offset fixo `-03:00` e é ignorado na comparação.
-
-### Ordenação
-
-* `by\_month`: `month` ascendente.
-* `top\_hotels`: `total\_brl` decrescente; empate por `hotel\_id` ascendente.
-
-## Contrato do CLI
+### Validando com a amostra oficial
 
 ```bash
-python -m onfly\_report \\
-  --input data/reservas\_hoteis.csv \\
-  --rates data/taxas\_cambio.csv \\
-  --output output/report.json \\
-  --top 5
-```
-
-|Argumento|Obrigatório|Padrão|
-|-|-|-|
-|`--input`|sim|—|
-|`--rates`|sim|—|
-|`--output`|não|`output/report.json`|
-|`--top`|não|`5` (inteiro ≥ 1)|
-
-Códigos de saída: `0` sucesso, `2` entrada/argumento inválido, `1` erro inesperado.
-
-O relatório deve ter exatamente este formato:
-
-```json
-{
-  "report\_version": "1.0",
-  "generated\_at": "2025-07-01T10:00:00-03:00",
-  "summary": {
-    "total\_reservations": 0,
-    "confirmed\_reservations": 0,
-    "cancelled\_reservations": 0,
-    "no\_show\_reservations": 0,
-    "total\_room\_nights": 0,
-    "total\_amount\_brl": "0.00",
-    "average\_nightly\_rate\_brl": "0.00"
-  },
-  "by\_month": \[
-    {"month": "2025-01", "reservations": 0, "room\_nights": 0, "total\_brl": "0.00"}
-  ],
-  "top\_hotels": \[
-    {"hotel\_id": "H01", "hotel\_name": "Hotel Exemplo", "room\_nights": 0, "total\_brl": "0.00"}
-  ]
-}
-```
-
-* Dinheiro é string com exatamente 2 casas (`"1234.50"`), sem separador de milhar.
-* `report\_version` é sempre `"1.0"`.
-* `top\_hotels` tem `--top` itens (ou menos, se houver menos hotéis).
-* `by\_month` usa o mês do check-in.
-* Não altere nomes, tipos ou semântica dos campos.
-
-## Amostra de validação
-
-Rode o CLI na amostra e compare com o resultado abaixo:
-
-```bash
-PYTHONPATH=src python -m onfly\_report \\
-  --input data/exemplo-validacao.csv \\
-  --rates data/taxas\_cambio.csv \\
+PYTHONPATH=src python -m onfly_report \
+  --input data/exemplo-validacao.csv \
+  --rates data/taxas_cambio.csv \
   --output output/exemplo.json
 ```
 
-<!-- AMOSTRA:INICIO -->
+Resultado esperado:
 
-|Campo|Valor esperado|
-|-|-|
-|`total\_reservations`|12|
-|`confirmed\_reservations`|9|
-|`cancelled\_reservations`|2|
-|`no\_show\_reservations`|1|
-|`total\_room\_nights`|28|
-|`total\_amount\_brl`|7566.00|
-|`average\_nightly\_rate\_brl`|270.21|
-
-|`month`|`reservations`|`room\_nights`|`total\_brl`|
-|-|-|-|-|
-|2025-01|8|25|6684.00|
-|2025-02|1|3|882.00|
-
-|`hotel\_id`|`hotel\_name`|`room\_nights`|`total\_brl`|
-|-|-|-|-|
-|H01|Hotel Aurora Paulista|3|1200.00|
-|H02|Hotel Mirante|2|1084.00|
-|H12|Hotel Miami Beach|1|1000.00|
-|H10|Hotel Madrid, Gran Vía|4|900.00|
-|H09|Hotel Lisboa, Centro|3|882.00|
-
-<!-- AMOSTRA:FIM -->
-
-A amostra cobre apenas parte dos cenários; use as regras acima para os demais.
-
-## Entrega
-
-Suba o projeto, incluindo a pasta `entrega/`, em um repositório público no GitHub e compartilhe o
-acesso com nosso time via forms.
-
-```
-entrega/
-├── README-ENTREGA.md
-└── uso-de-ia/                 # apenas se usou IA
-    ├── sessao.md (ou .txt/.jsonl; várias: sessao-01.md, sessao-02.md...)
-    └── declaracao.md
+```text
+Reservas: 12 | Confirmadas: 9 | Noites: 28 | Total BRL: 7566.00
 ```
 
-**`README-ENTREGA.md`** deve ter: defeitos corrigidos, causa raiz em uma frase por defeito, como
-investigou/abordou o problema, como validar e resultado do `pytest`.
+## 🧩 Defeitos corrigidos
 
-**Caminho com IA:** use assistentes de IA se quiser. Se usar, inclua a exportação da(s) sessão(ões)
-no formato nativo da ferramenta (`/export` do Claude Code, export/JSON de outros assistentes, ou log
-consolidado de prompts e respostas) e uma `declaracao.md` com:
+- operação de câmbio invertida;
+- perda de precisão monetária;
+- status não faturáveis incluídos nos totais;
+- cálculo incorreto na virada de mês;
+- ranking de hotéis em ordem incorreta;
+- desempate incorreto para hotéis de mesmo valor.
 
-* ferramenta e modelo usados;
-* o que a IA fez e o que você fez.
+O processo de investigação, as causas e as validações estão detalhados em [`entrega/README-ENTREGA.md`](entrega/README-ENTREGA.md).
 
-**Caminho sem IA:** não é necessária sessão nem declaração. A investigação fica no
-`entrega/README-ENTREGA.md`.
+## 🤖 Uso de inteligência artificial
 
-## O que não pode mudar
+O uso de IA foi declarado conforme solicitado no desafio:
 
-* O comando e os argumentos do CLI.
-* O schema e a semântica do relatório acima.
-* Os arquivos `data/reservas\_hoteis.csv` e `data/taxas\_cambio.csv`.
+- [`entrega/uso-de-ia/declaracao.md`](entrega/uso-de-ia/declaracao.md)
+- [`entrega/uso-de-ia/sessao-01.md`](entrega/uso-de-ia/sessao-01.md)
+- [`entrega/uso-de-ia/sessao-02.md`](entrega/uso-de-ia/sessao-02.md)
+- exportações nativas em JSONL na mesma pasta
 
-Você pode reorganizar o código interno, adicionar arquivos, melhorar logs e adicionar testes. Os
-testes fornecidos devem permanecer inalterados.
+## 🤔 Problemas que podem aparecer
 
-## Como será avaliado
+### `No module named onfly_report`
 
-A correção verifica se o relatório segue este documento, se os defeitos foram corrigidos e se os
-testes fornecidos passam sem alteração. Testes adicionais são considerados.
+Confirme que `src` está no `PYTHONPATH`:
 
-## Checklist
+Linux ou macOS:
 
-* \[ ] O CLI roda com Python 3.11 (`PYTHONPATH=src python -m onfly\_report ...`).
-* \[ ] O comando de execução gera `output/report.json` sem erro.
-* \[ ] O relatório segue o contrato acima.
-* \[ ] `pytest -q` passa com os testes fornecidos.
-* \[ ] `entrega/README-ENTREGA.md` preenchido.
-* \[ ] Sessão + declaração apenas no caminho com IA; investigação no README-ENTREGA nos dois caminhos.
-* \[ ] Repositório público no GitHub com o projeto e o link enviado.
+```bash
+export PYTHONPATH=src
+```
+
+Windows PowerShell:
+
+```powershell
+$env:PYTHONPATH = "src"
+```
+
+### O comando copiado do Bash não funciona no PowerShell
+
+No Bash, a continuação de linha usa `\`. No PowerShell, use a crase `` ` `` ou execute o comando em uma única linha.
+
+### O relatório não apareceu
+
+Confira o caminho informado em `--output`. Se o argumento não for enviado, o padrão é `output/report.json`.
+
+### `--top` retorna erro
+
+O valor precisa ser um inteiro maior ou igual a `1`.
+
+## 📚 Documentação complementar
+
+- [Relatório completo da entrega](entrega/README-ENTREGA.md)
+- [Declaração de uso de IA](entrega/uso-de-ia/declaracao.md)
+- [Configuração do projeto](pyproject.toml)
+
+---
+
+## Obrigado! 🚀
+
+Projeto desenvolvido como parte do desafio técnico da Onfly.

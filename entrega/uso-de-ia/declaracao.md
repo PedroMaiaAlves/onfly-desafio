@@ -14,7 +14,7 @@ O Codex foi utilizado como apoio para preparar o ambiente, investigar falhas, ex
 
 Foram consultadas duas sessões:
 
-1. **Preparação, investigação e testes:** configuração do Python 3.11 e das dependências, reprodução das falhas, apoio ao diagnóstico, execução do CLI, criação de testes adicionais e validação do projeto.
+1. **Preparação, investigação e testes:** configuração do Python 3.11 e das dependências, reprodução dos casos de teste, execução do CLI, criação de testes adicionais e verificação do projeto para entrega final.
 2. **Revisão e documentação:** auditoria dos requisitos de entrega, conferência do código e dos testes, identificação de pendências e elaboração dos documentos para apresentar o projeto de forma clara e amigável no GitHub.
 
 ## O que a IA fez
